@@ -4,7 +4,9 @@ import com.gaywood.stock.api.dto.*
 import com.gaywood.stock.application.OrderService
 import com.gaywood.stock.domain.order.model.OrderStatus
 import jakarta.validation.Valid
+import kotlinx.coroutines.runBlocking
 import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @RestController
@@ -14,14 +16,13 @@ class OrderController(
 ) {
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    fun createOrder(@RequestBody @Valid request: CreateOrderRequest): OrderResponse {
+    fun createOrder(@RequestBody @Valid request: CreateOrderRequest): ResponseEntity<OrderResponse> = runBlocking {
         val order = orderService.placeOrder(
             staffId = request.staffId,
             tableNumber = request.tableNumber,
             items = request.items.map { it.toServiceInput() }
         )
-        return OrderResponse.from(order)
+        ResponseEntity.status(HttpStatus.CREATED).body(OrderResponse.from(order))
     }
 
     private fun OrderItemRequest.toServiceInput() = OrderService.OrderItemInput(
@@ -31,42 +32,42 @@ class OrderController(
     )
 
     @GetMapping
-    fun getActiveOrders(): List<OrderResponse> {
-        return orderService.getActiveOrders().map { OrderResponse.from(it) }
+    fun getActiveOrders(): List<OrderResponse> = runBlocking {
+        orderService.getActiveOrders().map { OrderResponse.from(it) }
     }
 
     @GetMapping("/{orderId}")
-    fun getOrder(@PathVariable orderId: String): OrderResponse {
+    fun getOrder(@PathVariable orderId: String): OrderResponse = runBlocking {
         val order = orderService.getOrder(orderId)
             ?: throw OrderNotFoundException(orderId)
-        return OrderResponse.from(order)
+        OrderResponse.from(order)
     }
 
     @GetMapping("/{orderId}/bill")
-    fun getBill(@PathVariable orderId: String): BillResponse {
+    fun getBill(@PathVariable orderId: String): BillResponse = runBlocking {
         val bill = orderService.getBill(orderId)
-        return BillResponse.from(bill)
+        BillResponse.from(bill)
     }
 
     @PostMapping("/{orderId}/status")
     fun updateStatus(
         @PathVariable orderId: String,
         @RequestParam status: String
-    ): OrderResponse {
+    ): OrderResponse = runBlocking {
         val newStatus = OrderStatus.valueOf(status.uppercase())
         val order = orderService.updateOrderStatus(orderId, newStatus)
-        return OrderResponse.from(order)
+        OrderResponse.from(order)
     }
 
     @PostMapping("/{orderId}/cancel")
-    fun cancelOrder(@PathVariable orderId: String): OrderResponse {
+    fun cancelOrder(@PathVariable orderId: String): OrderResponse = runBlocking {
         val order = orderService.cancelOrder(orderId)
-        return OrderResponse.from(order)
+        OrderResponse.from(order)
     }
 
     @GetMapping("/table/{tableNumber}")
-    fun getOrdersByTable(@PathVariable tableNumber: Int): List<OrderResponse> {
-        return orderService.getOrdersByTable(tableNumber).map { OrderResponse.from(it) }
+    fun getOrdersByTable(@PathVariable tableNumber: Int): List<OrderResponse> = runBlocking {
+        orderService.getOrdersByTable(tableNumber).map { OrderResponse.from(it) }
     }
 }
 

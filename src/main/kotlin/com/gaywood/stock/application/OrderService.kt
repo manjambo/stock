@@ -6,6 +6,8 @@ import com.gaywood.stock.domain.order.model.*
 import com.gaywood.stock.domain.order.repository.OrderRepository
 import com.gaywood.stock.domain.staff.model.StaffId
 import com.gaywood.stock.domain.staff.repository.StaffRepository
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -23,28 +25,39 @@ class OrderService(
         val notes: String = ""
     )
 
-    fun placeOrder(
+    suspend fun placeOrder(
         staffId: String,
         tableNumber: Int?,
         items: List<OrderItemInput>
     ): Order {
         val staff = findStaffOrThrow(staffId)
-        val orderItems = items.map { toOrderItem(it) }
+        val allMenuItems = fetchAllMenuItems()
+
+        val orderItems = items.map { toOrderItem(it, allMenuItems) }
         val order = Order.create(
             items = orderItems,
             tableNumber = tableNumber,
             staffId = staff.id
         )
-        return orderRepository.save(order)
+        return saveOrder(order)
     }
 
-    private fun findStaffOrThrow(staffId: String) =
+    private suspend fun findStaffOrThrow(staffId: String) = withContext(Dispatchers.IO) {
         staffRepository.findById(StaffId(staffId))
             ?: throw IllegalArgumentException("Staff member not found: $staffId")
+    }
 
-    private fun toOrderItem(input: OrderItemInput): OrderItem {
-        val menuItem = findMenuItemOrThrow(input.menuItemId)
-        requireMenuItemAvailable(menuItem)
+    private suspend fun fetchAllMenuItems() = withContext(Dispatchers.IO) {
+        menuRepository.findAll().flatMap { it.items }
+    }
+
+    private fun toOrderItem(
+        input: OrderItemInput,
+        allMenuItems: List<com.gaywood.stock.domain.menu.model.MenuItem>
+    ): OrderItem {
+        val menuItem = allMenuItems.find { it.id == MenuItemId(input.menuItemId) }
+            ?: throw IllegalArgumentException("Menu item not found: ${input.menuItemId}")
+        check(menuItem.available) { "Menu item is not available: ${menuItem.name}" }
         return OrderItem.create(
             menuItemId = menuItem.id,
             menuItemName = menuItem.name,
@@ -54,51 +67,45 @@ class OrderService(
         )
     }
 
-    private fun findMenuItemOrThrow(menuItemId: String) =
-        menuRepository.findAll()
-            .flatMap { it.items }
-            .find { it.id == MenuItemId(menuItemId) }
-            ?: throw IllegalArgumentException("Menu item not found: $menuItemId")
-
-    private fun requireMenuItemAvailable(menuItem: com.gaywood.stock.domain.menu.model.MenuItem) {
-        check(menuItem.available) { "Menu item is not available: ${menuItem.name}" }
+    private suspend fun saveOrder(order: Order) = withContext(Dispatchers.IO) {
+        orderRepository.save(order)
     }
 
     @Transactional(readOnly = true)
-    fun getOrder(orderId: String): Order? {
-        return orderRepository.findById(OrderId(orderId))
+    suspend fun getOrder(orderId: String): Order? = withContext(Dispatchers.IO) {
+        orderRepository.findById(OrderId(orderId))
     }
 
     @Transactional(readOnly = true)
-    fun getBill(orderId: String): Bill {
+    suspend fun getBill(orderId: String): Bill = withContext(Dispatchers.IO) {
         val order = orderRepository.findById(OrderId(orderId))
             ?: throw IllegalArgumentException("Order not found: $orderId")
-        return order.generateBill()
+        order.generateBill()
     }
 
-    fun updateOrderStatus(orderId: String, newStatus: OrderStatus): Order {
+    suspend fun updateOrderStatus(orderId: String, newStatus: OrderStatus): Order = withContext(Dispatchers.IO) {
         val order = orderRepository.findById(OrderId(orderId))
             ?: throw IllegalArgumentException("Order not found: $orderId")
 
         order.updateStatus(newStatus)
-        return orderRepository.save(order)
+        orderRepository.save(order)
     }
 
-    fun cancelOrder(orderId: String): Order {
+    suspend fun cancelOrder(orderId: String): Order = withContext(Dispatchers.IO) {
         val order = orderRepository.findById(OrderId(orderId))
             ?: throw IllegalArgumentException("Order not found: $orderId")
 
         order.cancel()
-        return orderRepository.save(order)
+        orderRepository.save(order)
     }
 
     @Transactional(readOnly = true)
-    fun getActiveOrders(): List<Order> {
-        return orderRepository.findActiveOrders()
+    suspend fun getActiveOrders(): List<Order> = withContext(Dispatchers.IO) {
+        orderRepository.findActiveOrders()
     }
 
     @Transactional(readOnly = true)
-    fun getOrdersByTable(tableNumber: Int): List<Order> {
-        return orderRepository.findByTableNumber(tableNumber)
+    suspend fun getOrdersByTable(tableNumber: Int): List<Order> = withContext(Dispatchers.IO) {
+        orderRepository.findByTableNumber(tableNumber)
     }
 }

@@ -11,65 +11,81 @@ import com.gaywood.stock.domain.stock.model.StockItem
 import com.gaywood.stock.domain.stock.model.StockItemId
 import com.gaywood.stock.domain.stock.model.StockLocation
 import com.gaywood.stock.domain.stock.repository.StockRepository
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class StockOperationService(
     private val stockRepository: StockRepository
 ) {
 
-    fun viewStock(staff: Staff, location: StockLocation): List<StockItem> {
+    suspend fun viewStock(staff: Staff, location: StockLocation): List<StockItem> {
         requirePermission(staff, Permission.VIEW_STOCK)
         requireLocationAccess(staff, location)
-        return stockRepository.findByLocation(location)
+        return withContext(Dispatchers.IO) {
+            stockRepository.findByLocation(location)
+        }
     }
 
-    fun viewAllStock(staff: Staff): List<StockItem> {
+    suspend fun viewAllStock(staff: Staff): List<StockItem> {
         requirePermission(staff, Permission.VIEW_STOCK)
-        return stockRepository.findAll().filter { staff.canAccessLocation(it.location) }
+        return withContext(Dispatchers.IO) {
+            stockRepository.findAll().filter { staff.canAccessLocation(it.location) }
+        }
     }
 
-    fun addStock(staff: Staff, stockItemId: StockItemId, quantity: Quantity): StockItem {
+    suspend fun addStock(staff: Staff, stockItemId: StockItemId, quantity: Quantity): StockItem {
         requirePermission(staff, Permission.ADD_STOCK)
         val stockItem = findStockItemOrThrow(stockItemId)
         requireLocationAccess(staff, stockItem.location)
 
         stockItem.addStock(quantity)
-        return stockRepository.save(stockItem)
+        return withContext(Dispatchers.IO) {
+            stockRepository.save(stockItem)
+        }
     }
 
-    fun removeStock(staff: Staff, stockItemId: StockItemId, quantity: Quantity): StockItem {
+    suspend fun removeStock(staff: Staff, stockItemId: StockItemId, quantity: Quantity): StockItem {
         requirePermission(staff, Permission.REMOVE_STOCK)
         val stockItem = findStockItemOrThrow(stockItemId)
         requireLocationAccess(staff, stockItem.location)
 
         stockItem.removeStock(quantity)
-        return stockRepository.save(stockItem)
+        return withContext(Dispatchers.IO) {
+            stockRepository.save(stockItem)
+        }
     }
 
-    fun adjustStock(staff: Staff, stockItemId: StockItemId, newQuantity: Quantity, reason: String): StockItem {
+    suspend fun adjustStock(staff: Staff, stockItemId: StockItemId, newQuantity: Quantity, reason: String): StockItem {
         requirePermission(staff, Permission.ADJUST_STOCK)
         val stockItem = findStockItemOrThrow(stockItemId)
         requireLocationAccess(staff, stockItem.location)
 
         stockItem.adjustStock(newQuantity, reason)
-        return stockRepository.save(stockItem)
+        return withContext(Dispatchers.IO) {
+            stockRepository.save(stockItem)
+        }
     }
 
-    fun setLowStockThreshold(staff: Staff, stockItemId: StockItemId, threshold: LowStockThreshold): StockItem {
+    suspend fun setLowStockThreshold(staff: Staff, stockItemId: StockItemId, threshold: LowStockThreshold): StockItem {
         requirePermission(staff, Permission.SET_THRESHOLDS)
         val stockItem = findStockItemOrThrow(stockItemId)
         requireLocationAccess(staff, stockItem.location)
 
         stockItem.setLowStockThreshold(threshold)
-        return stockRepository.save(stockItem)
+        return withContext(Dispatchers.IO) {
+            stockRepository.save(stockItem)
+        }
     }
 
-    fun viewLowStockItems(staff: Staff): List<StockItem> {
+    suspend fun viewLowStockItems(staff: Staff): List<StockItem> {
         requirePermission(staff, Permission.VIEW_STOCK)
-        return stockRepository.findLowStockItems().filter { staff.canAccessLocation(it.location) }
+        return withContext(Dispatchers.IO) {
+            stockRepository.findLowStockItems().filter { staff.canAccessLocation(it.location) }
+        }
     }
 
-    private fun findStockItemOrThrow(id: StockItemId): StockItem {
-        return stockRepository.findById(id)
+    private suspend fun findStockItemOrThrow(id: StockItemId): StockItem = withContext(Dispatchers.IO) {
+        stockRepository.findById(id)
             ?: throw StockItemNotFoundException(id.value)
     }
 

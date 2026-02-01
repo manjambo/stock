@@ -24,6 +24,9 @@ dependencies {
     // Kotlin reflection (required for Spring)
     implementation(libs.kotlin.reflect)
 
+    // Kotlin Coroutines
+    implementation(libs.bundles.coroutines)
+
     // Flyway
     implementation(libs.bundles.flyway)
 
@@ -34,6 +37,7 @@ dependencies {
     // Testing
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.bundles.kotest)
+    testImplementation(libs.kotlinx.coroutines.test)
 }
 
 jacoco {

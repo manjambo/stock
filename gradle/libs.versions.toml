@@ -1,5 +1,6 @@
 [versions]
 kotlin = "2.1.10"
+kotlinxCoroutines = "1.9.0"
 springBoot = "3.4.1"
 springDependencyManagement = "1.1.7"
 flyway = "10.21.0"
@@ -21,6 +22,9 @@ jackson-module-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-
 
 # Kotlin
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
+kotlinx-coroutines-reactor = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactor", version.ref = "kotlinxCoroutines" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinxCoroutines" }
 
 # Flyway
 flyway-core = { module = "org.flywaydb:flyway-core", version.ref = "flyway" }
@@ -39,6 +43,7 @@ kotest-extensions-spring = { module = "io.kotest.extensions:kotest-extensions-sp
 spring-boot = ["spring-boot-starter-web", "spring-boot-starter-data-jpa", "spring-boot-starter-validation"]
 flyway = ["flyway-core", "flyway-postgresql"]
 kotest = ["kotest-runner-junit5", "kotest-assertions-core", "kotest-extensions-spring"]
+coroutines = ["kotlinx-coroutines-core", "kotlinx-coroutines-reactor"]
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
