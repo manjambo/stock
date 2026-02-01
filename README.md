@@ -7,6 +7,7 @@ A Domain-Driven Design (DDD) implementation for bar and kitchen stock management
 - **Language**: Kotlin 2.1
 - **Testing**: Kotest BehaviorSpec
 - **ORM**: JetBrains Exposed
+- **Frameworks**: SpringBoot, Spring JPA
 - **Migrations**: Flyway
 - **Database**: H2 (test/local), PostgreSQL (production)
 
