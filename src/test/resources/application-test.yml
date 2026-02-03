@@ -20,3 +20,9 @@ logging:
   level:
     org.hibernate.SQL: DEBUG
     com.gaywood.stock: DEBUG
+
+# Togglz Feature Flags
+togglz:
+  enabled: true
+  console:
+    enabled: false

@@ -30,6 +30,9 @@ dependencies {
     // Flyway
     implementation(libs.bundles.flyway)
 
+    // Feature Flags
+    implementation(libs.bundles.togglz)
+
     // Database drivers
     runtimeOnly(libs.h2)
     runtimeOnly(libs.postgresql)
@@ -38,6 +41,7 @@ dependencies {
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.bundles.kotest)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.togglz.testing)
 }
 
 jacoco {

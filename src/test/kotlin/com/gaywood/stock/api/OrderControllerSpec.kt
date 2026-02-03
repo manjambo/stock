@@ -83,10 +83,32 @@ class OrderControllerSpec @Autowired constructor(
                 .andExpect(status().isNotFound)
         }
 
-        test("health endpoint returns UP") {
+        test("health endpoint returns UP with database status") {
             mockMvc.perform(get("/health"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.status").value("UP"))
+                .andExpect(jsonPath("$.components.database.status").value("UP"))
+        }
+
+        test("readiness endpoint returns UP with database and feature flags status") {
+            mockMvc.perform(get("/health/ready"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.status").value("UP"))
+                .andExpect(jsonPath("$.components.database.status").value("UP"))
+                .andExpect(jsonPath("$.components.featureFlags.status").value("UP"))
+        }
+
+        test("liveness endpoint returns UP") {
+            mockMvc.perform(get("/health/live"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.status").value("UP"))
+        }
+
+        test("features endpoint returns feature flags status") {
+            mockMvc.perform(get("/health/features"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.features.LOW_STOCK_ALERTS").value(true))
+                .andExpect(jsonPath("$.features.ORDER_NOTIFICATIONS").exists())
         }
     }
 }

@@ -39,3 +39,11 @@ logging:
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
     com.gaywood.stock: DEBUG
+
+# Togglz Feature Flags
+togglz:
+  enabled: true
+  console:
+    enabled: true
+    path: /togglz-console
+    secured: false
