@@ -5,11 +5,13 @@ A Domain-Driven Design (DDD) implementation for bar and kitchen stock management
 ## Tech Stack
 
 - **Language**: Kotlin 2.1
-- **Testing**: Kotest BehaviorSpec
-- **ORM**: JetBrains Exposed
-- **Frameworks**: SpringBoot, Spring JPA
+- **Framework**: Spring Boot 3.4
+- **ORM**: Spring Data JPA / Hibernate
+- **Async**: Kotlin Coroutines
+- **Feature Flags**: Togglz
+- **Testing**: Kotest (BehaviorSpec, FunSpec)
 - **Migrations**: Flyway
-- **Database**: H2 (test/local), PostgreSQL (production)
+- **Database**: H2 (test), PostgreSQL (production)
 
 ## Getting Started
 
@@ -24,8 +26,10 @@ A Domain-Driven Design (DDD) implementation for bar and kitchen stock management
 ## Architecture
 
 This project follows Domain-Driven Design principles with clear separation between:
-- **Domain Layer**: Business logic, aggregates, value objects, domain events
-- **Infrastructure Layer**: Persistence implementations using Exposed ORM
+- **API Layer**: REST controllers, DTOs, exception handlers
+- **Application Layer**: Orchestration services (OrderService)
+- **Domain Layer**: Business logic, aggregates, value objects, domain events, domain services
+- **Infrastructure Layer**: JPA persistence, Togglz configuration
 
 ## Class Diagram
 
@@ -400,7 +404,7 @@ classDiagram
 
     %% ==================== INFRASTRUCTURE ====================
     namespace Infrastructure {
-        class ExposedStockRepository {
+        class JpaStockRepositoryAdapter {
             +save(stockItem: StockItem): StockItem
             +findById(id: StockItemId): StockItem?
             +findByLocation(location: StockLocation): List~StockItem~
@@ -410,7 +414,7 @@ classDiagram
             +delete(id: StockItemId)
         }
 
-        class ExposedStaffRepository {
+        class JpaStaffRepositoryAdapter {
             +save(staff: Staff): Staff
             +findById(id: StaffId): Staff?
             +findByRole(roleType: Class): List~Staff~
@@ -418,30 +422,24 @@ classDiagram
             +delete(id: StaffId)
         }
 
-        class ExposedStockEventRepository {
-            +save(event: StockEvent)
-            +findByStockItemId(id: StockItemId): List~StockEvent~
-            +findAll(): List~StockEvent~
+        class JpaOrderRepositoryAdapter {
+            +save(order: Order): Order
+            +findById(id: OrderId): Order?
+            +findActiveOrders(): List~Order~
+            +findByTableNumber(tableNumber: Int): List~Order~
         }
 
-        class DatabaseConfig {
-            +h2InMemory(dbName: String)$ DatabaseSettings
-            +postgresql(...)$ DatabaseSettings
-        }
-
-        class DatabaseInitializer {
-            +initialize(): Database
-            +close()
+        class JpaMenuRepositoryAdapter {
+            +save(menu: Menu): Menu
+            +findById(id: MenuId): Menu?
+            +findAll(): List~Menu~
         }
     }
 
-    ExposedStockRepository ..|> StockRepository
-    ExposedStaffRepository ..|> StaffRepository
-    ExposedStockEventRepository ..|> StockEventRepository
-    ExposedStockRepository --> DatabaseInitializer
-    ExposedStaffRepository --> DatabaseInitializer
-    ExposedStockEventRepository --> DatabaseInitializer
-    DatabaseInitializer --> DatabaseConfig
+    JpaStockRepositoryAdapter ..|> StockRepository
+    JpaStaffRepositoryAdapter ..|> StaffRepository
+    JpaOrderRepositoryAdapter ..|> OrderRepository
+    JpaMenuRepositoryAdapter ..|> MenuRepository
 ```
 
 ## Permissions Matrix
@@ -498,24 +496,35 @@ The system supports the 14 major food allergens as defined by food safety regula
 
 ```
 src/
-├── main/kotlin/com/gaywood/stock/
-│   ├── domain/
-│   │   ├── shared/           # Entity, AggregateRoot, DomainEvent, Exceptions
-│   │   ├── stock/
-│   │   │   ├── model/        # StockItem aggregate, value objects
-│   │   │   ├── event/        # Domain events
-│   │   │   └── repository/   # Repository interface
-│   │   ├── staff/
-│   │   │   ├── model/        # Staff aggregate, StaffRole, Permission
-│   │   │   └── repository/   # Repository interface
-│   │   └── operation/
-│   │       └── service/      # StockOperationService
-│   └── infrastructure/
-│       └── persistence/      # Exposed repositories, DB config
+├── main/
+│   ├── java/com/gaywood/stock/
+│   │   └── infrastructure/config/  # Togglz Features enum (Java for compatibility)
+│   ├── kotlin/com/gaywood/stock/
+│   │   ├── api/
+│   │   │   ├── controller/         # REST controllers (Order, Health)
+│   │   │   ├── dto/                # Request/Response DTOs
+│   │   │   └── advice/             # Global exception handlers
+│   │   ├── application/            # Application services (OrderService)
+│   │   ├── domain/
+│   │   │   ├── shared/             # Entity, AggregateRoot, DomainEvent, Exceptions
+│   │   │   ├── stock/              # StockItem aggregate, events, repository
+│   │   │   ├── staff/              # Staff aggregate, roles, permissions
+│   │   │   ├── menu/               # Menu aggregate, MenuItem
+│   │   │   ├── order/              # Order aggregate, Bill, OrderItem
+│   │   │   └── operation/service/  # StockOperationService
+│   │   └── infrastructure/
+│   │       ├── config/             # Togglz configuration
+│   │       ├── persistence/jpa/    # JPA entities, repositories, converters
+│   │       └── seed/               # Database seeder
+│   └── resources/
+│       ├── application.yml         # Main configuration
+│       └── db/migration/           # Flyway migrations
 └── test/kotlin/com/gaywood/stock/
-    ├── domain/               # Unit tests
-    ├── infrastructure/       # Integration tests
-    └── fixtures/             # Test fixtures
+    ├── api/                        # Controller integration tests
+    ├── domain/                     # Domain unit tests
+    ├── infrastructure/             # Repository & config tests
+    ├── scenarios/                  # End-to-end scenario tests
+    └── fixtures/                   # Test fixtures
 ```
 
 ## Order API Sequence Diagrams
@@ -727,13 +736,86 @@ sequenceDiagram
     OrderController-->>Client: 200 OK (List<OrderResponse>)
 ```
 
+## Health Endpoints
+
+The application provides health endpoints for monitoring and deployment orchestration:
+
+| Endpoint | Purpose | Response |
+|----------|---------|----------|
+| `GET /health` | Full health check | Status + all components |
+| `GET /health/ready` | Readiness probe (K8s) | Database + feature flags status |
+| `GET /health/live` | Liveness probe (K8s) | Simple UP status |
+| `GET /health/features` | Feature flags status | All feature flag states |
+
+### Example Responses
+
+**GET /health/ready**
+```json
+{
+  "status": "UP",
+  "components": {
+    "database": { "status": "UP" },
+    "featureFlags": { "status": "UP" }
+  }
+}
+```
+
+**GET /health/features**
+```json
+{
+  "features": {
+    "ORDER_NOTIFICATIONS": false,
+    "LOW_STOCK_ALERTS": true,
+    "KITCHEN_DISPLAY": false,
+    "TABLE_RESERVATIONS": false,
+    "LOYALTY_POINTS": false
+  }
+}
+```
+
+## Feature Flags (Togglz)
+
+The application uses Togglz for feature flag management.
+
+### Available Features
+
+| Feature | Default | Description |
+|---------|---------|-------------|
+| `ORDER_NOTIFICATIONS` | Off | Send notifications when order status changes |
+| `LOW_STOCK_ALERTS` | **On** | Automatically alert when stock falls below threshold |
+| `KITCHEN_DISPLAY` | Off | Enable kitchen display system integration |
+| `TABLE_RESERVATIONS` | Off | Enable table reservation functionality |
+| `LOYALTY_POINTS` | Off | Enable customer loyalty points system |
+
+### Togglz Console
+
+Access the web console at `/togglz-console` to toggle features at runtime.
+
+### Usage in Code
+
+```kotlin
+// Using injected FeatureManager (recommended)
+if (featureManager.isActive(Features.LOW_STOCK_ALERTS)) {
+    sendLowStockAlert(item)
+}
+
+// Using static method
+if (Features.KITCHEN_DISPLAY.isActive()) {
+    updateKitchenDisplay(order)
+}
+```
+
 ## Database Migrations
 
 Migrations are located in `src/main/resources/db/migration/`:
 
-- `V1__create_stock_items_table.sql` - Stock items table
-- `V2__create_staff_table.sql` - Staff table
-- `V3__create_stock_events_table.sql` - Stock events audit table
-- `V4__create_stock_item_allergens_table.sql` - Stock item allergens (many-to-many)
+| Migration | Description |
+|-----------|-------------|
+| `V1__create_stock_items_table.sql` | Stock items table |
+| `V2__create_staff_table.sql` | Staff table |
+| `V3__create_stock_events_table.sql` | Stock events audit table |
+| `V4__create_stock_item_allergens_table.sql` | Stock item allergens (many-to-many) |
+| `V5__create_menu_tables.sql` | Menus and menu items tables |
+| `V6__create_order_tables.sql` | Orders and order items tables |
 
 All migrations are idempotent and support both H2 and PostgreSQL.
