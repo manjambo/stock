@@ -3,6 +3,7 @@ package com.gaywood.stock.domain.menu.model
 import com.gaywood.stock.domain.shared.Entity
 import com.gaywood.stock.domain.stock.model.Allergen
 import com.gaywood.stock.domain.stock.model.StockItem
+import com.gaywood.stock.domain.stock.model.StockItemId
 
 class MenuItem private constructor(
     override val id: MenuItemId,
@@ -10,7 +11,8 @@ class MenuItem private constructor(
     private var _description: String,
     private var _price: Price,
     private val _ingredients: MutableList<MenuItemIngredient>,
-    private var _available: Boolean
+    private var _available: Boolean,
+    private var _cachedAllergens: MutableSet<Allergen> = mutableSetOf()
 ) : Entity<MenuItemId> {
 
     val name: String get() = _name
@@ -18,6 +20,13 @@ class MenuItem private constructor(
     val price: Price get() = _price
     val ingredients: List<MenuItemIngredient> get() = _ingredients.toList()
     val available: Boolean get() = _available
+
+    /**
+     * Returns the cached allergens for this menu item.
+     * Allergens are derived from the stock items used as ingredients.
+     * Call [refreshAllergens] when stock item allergens change or after loading from persistence.
+     */
+    val allergens: Set<Allergen> get() = _cachedAllergens.toSet()
 
     fun updateDetails(name: String, description: String, price: Price) {
         require(name.isNotBlank()) { "Menu item name cannot be blank" }
@@ -38,10 +47,10 @@ class MenuItem private constructor(
         }
     }
 
-    private fun findIngredientIndexByStockItem(stockItemId: com.gaywood.stock.domain.stock.model.StockItemId) =
+    private fun findIngredientIndexByStockItem(stockItemId: StockItemId) =
         _ingredients.indexOfFirst { it.stockItemId == stockItemId }
 
-    fun removeIngredient(stockItemId: com.gaywood.stock.domain.stock.model.StockItemId) {
+    fun removeIngredient(stockItemId: StockItemId) {
         _ingredients.removeIf { it.stockItemId == stockItemId }
     }
 
@@ -53,11 +62,23 @@ class MenuItem private constructor(
         _available = available
     }
 
-    fun collectAllergensFromIngredients(stockItemsById: Map<com.gaywood.stock.domain.stock.model.StockItemId, StockItem>): Set<Allergen> {
-        return _ingredients
+    /**
+     * Refreshes the cached allergens from the current stock items.
+     * Call this when ingredients change or when loading from persistence.
+     */
+    fun refreshAllergens(stockItemsById: Map<StockItemId, StockItem>) {
+        _cachedAllergens = _ingredients
             .mapNotNull { stockItemsById[it.stockItemId] }
             .flatMap { it.allergens }
-            .toSet()
+            .toMutableSet()
+    }
+
+    /**
+     * Sets the cached allergens directly. Used when loading from persistence
+     * where allergens are already stored.
+     */
+    fun setCachedAllergens(allergens: Set<Allergen>) {
+        _cachedAllergens = allergens.toMutableSet()
     }
 
     companion object {
@@ -67,7 +88,8 @@ class MenuItem private constructor(
             description: String = "",
             price: Price,
             ingredients: List<MenuItemIngredient> = emptyList(),
-            available: Boolean = true
+            available: Boolean = true,
+            cachedAllergens: Set<Allergen> = emptySet()
         ): MenuItem {
             require(name.isNotBlank()) { "Menu item name cannot be blank" }
             return MenuItem(
@@ -76,7 +98,8 @@ class MenuItem private constructor(
                 _description = description,
                 _price = price,
                 _ingredients = ingredients.toMutableList(),
-                _available = available
+                _available = available,
+                _cachedAllergens = cachedAllergens.toMutableSet()
             )
         }
     }

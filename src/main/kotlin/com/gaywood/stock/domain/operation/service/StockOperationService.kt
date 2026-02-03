@@ -11,11 +11,13 @@ import com.gaywood.stock.domain.stock.model.StockItem
 import com.gaywood.stock.domain.stock.model.StockItemId
 import com.gaywood.stock.domain.stock.model.StockLocation
 import com.gaywood.stock.domain.stock.repository.StockRepository
+import com.gaywood.stock.domain.stock.service.StockQueryService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class StockOperationService(
-    private val stockRepository: StockRepository
+    private val stockRepository: StockRepository,
+    private val stockQueryService: StockQueryService = StockQueryService(stockRepository)
 ) {
 
     suspend fun viewStock(staff: Staff, location: StockLocation): List<StockItem> {
@@ -80,7 +82,7 @@ class StockOperationService(
     suspend fun viewLowStockItems(staff: Staff): List<StockItem> {
         requirePermission(staff, Permission.VIEW_STOCK)
         return withContext(Dispatchers.IO) {
-            stockRepository.findLowStockItems().filter { staff.canAccessLocation(it.location) }
+            stockQueryService.findLowStockItems().filter { staff.canAccessLocation(it.location) }
         }
     }
 

@@ -35,21 +35,6 @@ class JpaStockRepositoryAdapter(
             .map { it.toDomain() }
     }
 
-    override fun findByAllergen(allergen: Allergen): List<StockItem> {
-        return jpaRepository.findByAllergensContaining(allergen).map { it.toDomain() }
-    }
-
-    override fun findContainingAnyAllergen(allergens: Set<Allergen>): List<StockItem> =
-        allergens.takeIf { it.isNotEmpty() }
-            ?.let { jpaRepository.findByAllergensIn(it).map { entity -> entity.toDomain() } }
-            ?: emptyList()
-
-    override fun findLowStockItems(): List<StockItem> {
-        return jpaRepository.findAll()
-            .map { it.toDomain() }
-            .filter { it.isLowStock() }
-    }
-
     override fun findAll(): List<StockItem> {
         return jpaRepository.findAll().map { it.toDomain() }
     }

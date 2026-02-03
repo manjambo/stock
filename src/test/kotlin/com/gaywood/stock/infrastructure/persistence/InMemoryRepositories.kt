@@ -35,20 +35,6 @@ class InMemoryStockRepository : StockRepository {
         return items.values.filter { it.category == category }
     }
 
-    override fun findByAllergen(allergen: Allergen): List<StockItem> {
-        return items.values.filter { it.containsAllergen(allergen) }
-    }
-
-    override fun findContainingAnyAllergen(allergens: Set<Allergen>): List<StockItem> {
-        return items.values.filter { item ->
-            item.allergens.any { it in allergens }
-        }
-    }
-
-    override fun findLowStockItems(): List<StockItem> {
-        return items.values.filter { it.isLowStock() }
-    }
-
     override fun findAll(): List<StockItem> {
         return items.values.toList()
     }

@@ -48,31 +48,33 @@ class Menu private constructor(
 
     fun availableItems(): List<MenuItem> = _items.values.filter { it.available }
 
-    fun collectAllAllergens(stockItemsById: Map<StockItemId, StockItem>): Set<Allergen> {
-        return _items.values
-            .flatMap { it.collectAllergensFromIngredients(stockItemsById) }
-            .toSet()
-    }
+    /**
+     * Returns all allergens present in any menu item.
+     * Uses cached allergens from menu items - call [refreshAllAllergens] if stock item allergens have changed.
+     */
+    fun collectAllAllergens(): Set<Allergen> =
+        _items.values.flatMap { it.allergens }.toSet()
 
-    fun findItemsContainingAllergen(allergen: Allergen, stockItemsById: Map<StockItemId, StockItem>): List<MenuItem> {
-        return _items.values.filter { item ->
-            item.collectAllergensFromIngredients(stockItemsById).contains(allergen)
-        }
-    }
+    /**
+     * Finds menu items containing the specified allergen.
+     * Uses cached allergens from menu items.
+     */
+    fun findItemsContainingAllergen(allergen: Allergen): List<MenuItem> =
+        _items.values.filter { allergen in it.allergens }
 
-    fun findItemsFreeOfAllergens(allergens: Set<Allergen>, stockItemsById: Map<StockItemId, StockItem>): List<MenuItem> {
-        return _items.values.filter { item ->
-            hasNoMatchingAllergens(item, allergens, stockItemsById)
-        }
-    }
+    /**
+     * Finds menu items that don't contain any of the specified allergens.
+     * Uses cached allergens from menu items.
+     */
+    fun findItemsFreeOfAllergens(allergens: Set<Allergen>): List<MenuItem> =
+        _items.values.filter { item -> item.allergens.none { it in allergens } }
 
-    private fun hasNoMatchingAllergens(
-        item: MenuItem,
-        allergens: Set<Allergen>,
-        stockItemsById: Map<StockItemId, StockItem>
-    ): Boolean {
-        val itemAllergens = item.collectAllergensFromIngredients(stockItemsById)
-        return itemAllergens.none { it in allergens }
+    /**
+     * Refreshes cached allergens for all menu items from the provided stock items.
+     * Call this when stock item allergens change or after loading menus from persistence.
+     */
+    fun refreshAllAllergens(stockItemsById: Map<StockItemId, StockItem>) {
+        _items.values.forEach { it.refreshAllergens(stockItemsById) }
     }
 
     companion object {

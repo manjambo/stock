@@ -3,6 +3,7 @@ package com.gaywood.stock.infrastructure.persistence.jpa.entity
 import com.gaywood.stock.domain.menu.model.MenuItem
 import com.gaywood.stock.domain.menu.model.MenuItemId
 import com.gaywood.stock.domain.menu.model.Price
+import com.gaywood.stock.domain.stock.model.Allergen
 import jakarta.persistence.*
 import java.math.BigDecimal
 import java.time.Instant
@@ -37,6 +38,15 @@ class MenuItemEntity(
     @OneToMany(mappedBy = "menuItem", cascade = [CascadeType.ALL], orphanRemoval = true, fetch = FetchType.EAGER)
     var ingredients: MutableList<MenuItemIngredientEntity> = mutableListOf(),
 
+    @ElementCollection
+    @CollectionTable(
+        name = "menu_item_cached_allergens",
+        joinColumns = [JoinColumn(name = "menu_item_id")]
+    )
+    @Column(name = "allergen")
+    @Enumerated(EnumType.STRING)
+    var cachedAllergens: MutableSet<Allergen> = mutableSetOf(),
+
     @Column(name = "created_at", nullable = false)
     var createdAt: Instant = Instant.now(),
 
@@ -50,7 +60,8 @@ class MenuItemEntity(
             description = description,
             price = Price(priceAmount, Currency.getInstance(priceCurrency)),
             ingredients = ingredients.map { it.toDomain() },
-            available = available
+            available = available,
+            cachedAllergens = cachedAllergens.toSet()
         )
     }
 
@@ -69,6 +80,7 @@ class MenuItemEntity(
                 priceAmount = item.price.amount,
                 priceCurrency = item.price.currency.currencyCode,
                 available = item.available,
+                cachedAllergens = item.allergens.toMutableSet(),
                 createdAt = Instant.now(),
                 updatedAt = Instant.now()
             )

@@ -21,6 +21,20 @@ value class OrderItemId(val value: String) {
     }
 }
 
+/**
+ * Represents an item within an order.
+ *
+ * **Snapshot Pattern**: OrderItem intentionally stores denormalized data
+ * ([menuItemName], [unitPrice]) rather than referencing the MenuItem directly.
+ * This ensures orders preserve historical accuracy - if a menu item's name
+ * or price changes after an order is placed, the order retains the original
+ * values at the time of purchase.
+ *
+ * The [menuItemId] is kept for reference/audit purposes, but the business-relevant
+ * data (name, price) is captured at order creation time.
+ *
+ * This is a deliberate domain design choice, not a relational artifact.
+ */
 data class OrderItem(
     @field:NotNull(message = "Order item ID cannot be null")
     val id: OrderItemId,
