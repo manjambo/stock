@@ -33,6 +33,9 @@ dependencies {
     // Feature Flags
     implementation(libs.bundles.togglz)
 
+    // OpenAPI / Swagger
+    implementation(libs.springdoc.openapi.starter.webmvc.ui)
+
     // Database drivers
     runtimeOnly(libs.h2)
     runtimeOnly(libs.postgresql)

@@ -1,10 +1,21 @@
 package com.gaywood.stock.domain.stock.model
 
 import com.gaywood.stock.domain.shared.InvalidQuantityException
+import jakarta.validation.constraints.DecimalMin
+import jakarta.validation.constraints.Digits
+import jakarta.validation.constraints.NotNull
 import java.math.BigDecimal
 import java.math.RoundingMode
 
-data class Quantity(val amount: BigDecimal, val unit: Unit) : Comparable<Quantity> {
+data class Quantity(
+    @field:NotNull(message = "Amount cannot be null")
+    @field:DecimalMin(value = "0.0", inclusive = true, message = "Amount cannot be negative")
+    @field:Digits(integer = 10, fraction = 3, message = "Amount must have at most 10 integer digits and 3 decimal places")
+    val amount: BigDecimal,
+
+    @field:NotNull(message = "Unit cannot be null")
+    val unit: Unit
+) : Comparable<Quantity> {
 
     init {
         amount.takeIf { it < BigDecimal.ZERO }?.let {

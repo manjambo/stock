@@ -10,6 +10,7 @@ kotest = "5.9.1"
 kotestSpring = "1.1.3"
 jacoco = "0.8.12"
 togglz = "4.4.0"
+springdocOpenapi = "2.8.4"
 
 [libraries]
 # Spring Boot starters (versions managed by Spring BOM)
@@ -39,6 +40,9 @@ postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" 
 togglz-spring-boot-starter = { module = "org.togglz:togglz-spring-boot-starter", version.ref = "togglz" }
 togglz-console = { module = "org.togglz:togglz-console", version.ref = "togglz" }
 togglz-testing = { module = "org.togglz:togglz-testing", version.ref = "togglz" }
+
+# OpenAPI / Swagger
+springdoc-openapi-starter-webmvc-ui = { module = "org.springdoc:springdoc-openapi-starter-webmvc-ui", version.ref = "springdocOpenapi" }
 
 # Testing
 kotest-runner-junit5 = { module = "io.kotest:kotest-runner-junit5", version.ref = "kotest" }

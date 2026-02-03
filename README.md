@@ -8,6 +8,8 @@ A Domain-Driven Design (DDD) implementation for bar and kitchen stock management
 - **Framework**: Spring Boot 3.4
 - **ORM**: Spring Data JPA / Hibernate
 - **Async**: Kotlin Coroutines
+- **Validation**: Jakarta Validation (Bean Validation 3.0)
+- **API Documentation**: SpringDoc OpenAPI / Swagger UI
 - **Feature Flags**: Togglz
 - **Testing**: Kotest (BehaviorSpec, FunSpec)
 - **Migrations**: Flyway
@@ -804,6 +806,47 @@ if (Features.KITCHEN_DISPLAY.isActive()) {
     updateKitchenDisplay(order)
 }
 ```
+
+## API Documentation (OpenAPI/Swagger)
+
+The API is documented using SpringDoc OpenAPI with Swagger UI.
+
+### Endpoints
+
+| URL | Description |
+|-----|-------------|
+| `/swagger-ui.html` | Interactive Swagger UI |
+| `/api-docs` | OpenAPI JSON specification |
+
+### Features
+
+- Full API documentation with request/response examples
+- Schema validation constraints visible in documentation
+- Try-it-out functionality for testing endpoints
+
+## Validation
+
+The application uses Jakarta Validation annotations for input validation at both API and domain layers.
+
+### API Layer Validation
+
+| Field | Constraints |
+|-------|-------------|
+| `staffId` | `@NotBlank`, `@Pattern` (UUID format) |
+| `menuItemId` | `@NotBlank`, `@Pattern` (UUID format) |
+| `tableNumber` | `@Min(1)`, `@Max(999)` |
+| `quantity` | `@Positive`, `@Max(99)` |
+| `notes` | `@Size(max=500)` |
+| `items` | `@NotEmpty`, `@Size(max=50)` |
+
+### Domain Layer Validation
+
+| Type | Constraints |
+|------|-------------|
+| `Quantity.amount` | `@DecimalMin("0.0")`, `@Digits(integer=10, fraction=3)` |
+| `Price.amount` | `@DecimalMin("0.0")`, `@Digits(integer=8, fraction=2)` |
+| `StaffName.firstName/lastName` | `@NotBlank`, `@Size(min=1, max=100)` |
+| All ID value classes | Non-blank validation via init blocks |
 
 ## Database Migrations
 
