@@ -36,9 +36,11 @@ This is a **Domain-Driven Design (DDD)** stock management system for bar and kit
 domain/          Pure business logic, no framework dependencies
   ├── shared/    Entity, AggregateRoot, DomainEvent, domain exceptions
   ├── stock/     StockItem aggregate with Quantity, Allergen, StockCategory
+  │   └── service/  StockQueryService (business query logic)
   ├── staff/     Staff aggregate with role-based permissions (Worker/Manager)
+  │   └── event/    StaffEvent (StaffRoleChanged)
   ├── order/     Order aggregate with Bill generation
-  ├── menu/      Menu aggregate with MenuItem and ingredients
+  ├── menu/      Menu aggregate with MenuItem (with cached allergens)
   └── operation/ StockOperationService domain service
 
 application/     Orchestration layer (OrderService)
@@ -59,7 +61,8 @@ infrastructure/  Framework integrations
 
 - **Aggregates**: StockItem, Staff, Order, Menu are aggregate roots with their own identity
 - **Value Objects**: Quantity, Price, StockItemId, MenuItemId, etc. are immutable
-- **Domain Events**: StockEvent sealed class (StockAdded, StockRemoved, LowStockAlertRaised, etc.)
+- **Domain Events**: StockEvent sealed class (StockAdded, StockRemoved, LowStockAlertRaised, etc.), StaffEvent sealed class (StaffRoleChanged)
+- **Domain Services**: StockQueryService (allergen and low-stock queries), StockOperationService (staff-authorized operations)
 - **Repository Pattern**: Interfaces in domain, JPA implementations in infrastructure via adapter classes
 
 ### Type Mapping
@@ -103,4 +106,4 @@ Workers have location-specific access (BAR or KITCHEN only). Managers have all p
 
 - **Production**: PostgreSQL
 - **Testing**: H2 in PostgreSQL compatibility mode
-- **Migrations**: Flyway (V1-V6 in `src/main/resources/db/migration/`)
+- **Migrations**: Flyway (V1-V7 in `src/main/resources/db/migration/`)

@@ -319,6 +319,8 @@ classDiagram
             +role: StaffRole
             +hasPermission(permission: Permission): Boolean
             +canAccessLocation(location: StockLocation): Boolean
+            +promoteToManager(locations: Set~StockLocation~)
+            +demoteToWorker(location: StockLocation)
             +changeRole(newRole: StaffRole)
             +create()$ Staff
         }
@@ -374,6 +376,23 @@ classDiagram
     Worker --|> StaffRole
     Manager --|> StaffRole
 
+    %% ==================== STAFF EVENTS ====================
+    namespace StaffEvents {
+        class StaffEvent {
+            <<sealed>>
+            +staffId: StaffId
+            +occurredAt: Instant
+        }
+
+        class StaffRoleChanged {
+            +previousRole: StaffRole
+            +newRole: StaffRole
+        }
+    }
+
+    StaffEvent ..|> DomainEvent
+    StaffRoleChanged --|> StaffEvent
+
     %% ==================== REPOSITORIES ====================
     namespace Repositories {
         class StockRepository {
@@ -382,9 +401,6 @@ classDiagram
             +findById(id: StockItemId): StockItem?
             +findByLocation(location: StockLocation): List~StockItem~
             +findByCategory(category: StockCategory): List~StockItem~
-            +findByAllergen(allergen: Allergen): List~StockItem~
-            +findContainingAnyAllergen(allergens: Set~Allergen~): List~StockItem~
-            +findLowStockItems(): List~StockItem~
             +findAll(): List~StockItem~
             +delete(id: StockItemId)
         }
@@ -410,10 +426,18 @@ classDiagram
     StaffRepository ..> Staff
     StockEventRepository ..> StockEvent
 
-    %% ==================== DOMAIN SERVICE ====================
+    %% ==================== DOMAIN SERVICES ====================
     namespace DomainService {
+        class StockQueryService {
+            -stockRepository: StockRepository
+            +findLowStockItems(): List~StockItem~
+            +findItemsWithAllergen(allergen: Allergen): List~StockItem~
+            +findItemsContainingAnyAllergen(allergens: Set~Allergen~): List~StockItem~
+        }
+
         class StockOperationService {
             -stockRepository: StockRepository
+            -stockQueryService: StockQueryService
             +viewStock(staff: Staff, location: StockLocation): List~StockItem~
             +viewAllStock(staff: Staff): List~StockItem~
             +addStock(staff: Staff, id: StockItemId, quantity: Quantity): StockItem
@@ -424,7 +448,9 @@ classDiagram
         }
     }
 
+    StockQueryService --> StockRepository
     StockOperationService --> StockRepository
+    StockOperationService --> StockQueryService
     StockOperationService ..> Staff
     StockOperationService ..> StockItem
 
@@ -435,7 +461,6 @@ classDiagram
             +findById(id: StockItemId): StockItem?
             +findByLocation(location: StockLocation): List~StockItem~
             +findByCategory(category: StockCategory): List~StockItem~
-            +findLowStockItems(): List~StockItem~
             +findAll(): List~StockItem~
             +delete(id: StockItemId)
         }
@@ -884,5 +909,6 @@ Migrations are located in `src/main/resources/db/migration/`:
 | `V4__create_stock_item_allergens_table.sql` | Stock item allergens (many-to-many) |
 | `V5__create_menu_tables.sql` | Menus and menu items tables |
 | `V6__create_order_tables.sql` | Orders and order items tables |
+| `V7__add_menu_item_cached_allergens.sql` | Menu item cached allergens for efficient querying |
 
 All migrations are idempotent and support both H2 and PostgreSQL.
