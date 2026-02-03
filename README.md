@@ -25,6 +25,30 @@ A Domain-Driven Design (DDD) implementation for bar and kitchen stock management
 ./gradlew.bat build
 ```
 
+## Running Locally
+
+Run the application locally using the `local` profile, which uses an H2 in-memory database (no PostgreSQL required):
+
+```bash
+./gradlew.bat bootRun --args='--spring.profiles.active=local'
+```
+
+Once started, the following endpoints are available:
+
+| URL | Description |
+|-----|-------------|
+| http://localhost:8080/health | Health check endpoint |
+| http://localhost:8080/swagger-ui.html | Interactive API documentation |
+| http://localhost:8080/api-docs | OpenAPI JSON specification |
+| http://localhost:8080/h2-console | H2 database console |
+| http://localhost:8080/togglz-console | Feature flags management |
+
+The local profile:
+- Uses H2 in-memory database in PostgreSQL compatibility mode
+- Disables Flyway migrations (uses Hibernate auto DDL)
+- Enables H2 console for database inspection
+- Enables DEBUG logging for SQL and application code
+
 ## Architecture
 
 This project follows Domain-Driven Design principles with clear separation between:
