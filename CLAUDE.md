@@ -22,15 +22,47 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 # Run with test coverage report
 ./gradlew.bat test jacocoTestReport
+
+# Run specific module
+./gradlew.bat :stock-core:build
+./gradlew.bat :stock-grpc:build
+./gradlew.bat :stock-boot:build
+
+# Start the application
+./gradlew.bat :stock-boot:bootRun
 ```
 
-Coverage reports are generated in `build/reports/jacoco/test/`.
+Coverage reports are generated in `stock-boot/build/reports/jacoco/test/`.
+
+## Project Structure (Multi-Module)
+
+```
+stock/
+├── stock-core/                    # Core business logic
+│   ├── src/main/kotlin/           # Domain, Application, API, Infrastructure
+│   └── build.gradle.kts
+│
+├── stock-grpc/                    # gRPC gateway service
+│   ├── src/main/proto/            # Proto definitions
+│   ├── src/main/kotlin/           # gRPC service implementations
+│   └── build.gradle.kts
+│
+├── stock-boot/                    # Spring Boot application assembly
+│   ├── src/main/kotlin/           # Application.kt entry point
+│   ├── src/main/resources/        # application.yml, migrations
+│   ├── src/test/kotlin/           # Integration tests
+│   └── build.gradle.kts
+│
+├── settings.gradle.kts            # Module declarations
+├── build.gradle.kts               # Root build config
+└── gradle/libs.versions.toml      # Version catalog
+```
 
 ## Architecture
 
 This is a **Domain-Driven Design (DDD)** stock management system for bar and kitchen operations, built with Spring Boot 3.4 and Kotlin.
 
-### Layer Structure
+### Layer Structure (in stock-core)
 
 ```
 domain/          Pure business logic, no framework dependencies
@@ -56,6 +88,25 @@ infrastructure/  Framework integrations
       ├── repository/  Spring Data JPA repositories + adapter classes
       └── converters/  AttributeConverters for sealed classes and value objects
 ```
+
+### gRPC Gateway (stock-grpc)
+
+The gRPC module provides full API parity with REST:
+
+| REST Endpoint | gRPC Service | RPC Method |
+|---------------|--------------|------------|
+| `POST /orders` | OrderService | CreateOrder |
+| `GET /orders` | OrderService | ListActiveOrders |
+| `GET /orders/{id}` | OrderService | GetOrder |
+| `GET /orders/{id}/bill` | OrderService | GetBill |
+| `POST /orders/{id}/status` | OrderService | UpdateOrderStatus |
+| `POST /orders/{id}/cancel` | OrderService | CancelOrder |
+| `GET /orders/table/{n}` | OrderService | ListOrdersByTable |
+| `GET /health/*` | HealthService | Check, Ready, Live, Features |
+
+**Ports:**
+- REST API: 8080
+- gRPC: 9090
 
 ### Key Patterns
 
@@ -85,7 +136,7 @@ import com.gaywood.stock.domain.stock.model.Unit as StockUnit
 
 **Test Styles**: FunSpec for Spring integration tests, BehaviorSpec for unit tests
 
-**Test Fixtures**: Located in `src/test/kotlin/com/gaywood/stock/fixtures/`
+**Test Fixtures**: Located in `stock-boot/src/test/kotlin/com/gaywood/stock/fixtures/`
 - `StockFixtures` - Stock item builders
 - `StaffFixtures` - Staff member builders (barWorker, kitchenWorker, manager)
 - `MenuFixtures` - Menu and MenuItem builders
@@ -106,4 +157,4 @@ Workers have location-specific access (BAR or KITCHEN only). Managers have all p
 
 - **Production**: PostgreSQL
 - **Testing**: H2 in PostgreSQL compatibility mode
-- **Migrations**: Flyway (V1-V7 in `src/main/resources/db/migration/`)
+- **Migrations**: Flyway (V1-V7 in `stock-boot/src/main/resources/db/migration/`)

@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package stock.v1;
+
+option java_package = "com.gaywood.stock.grpc.v1";
+option java_multiple_files = true;
+option java_outer_classname = "CommonProto";
+
+import "google/protobuf/timestamp.proto";
+
+// Price with currency representation
+message Price {
+  int64 amount_minor = 1;  // Amount in minor units (pence/cents)
+  string currency = 2;      // Currency code (e.g., "GBP")
+  string formatted = 3;     // Formatted string (e.g., "£12.50")
+}
+
+// Pagination request parameters
+message PageRequest {
+  int32 page = 1;       // 0-indexed page number
+  int32 size = 2;       // Page size (default 20, max 100)
+}
+
+// Pagination response metadata
+message PageInfo {
+  int32 page = 1;           // Current page number
+  int32 size = 2;           // Page size
+  int64 total_elements = 3; // Total number of elements
+  int32 total_pages = 4;    // Total number of pages
+  bool has_next = 5;        // Whether there is a next page
+  bool has_previous = 6;    // Whether there is a previous page
+}
+
+// Order status enumeration
+enum OrderStatus {
+  ORDER_STATUS_UNSPECIFIED = 0;
+  ORDER_STATUS_PENDING = 1;
+  ORDER_STATUS_IN_PROGRESS = 2;
+  ORDER_STATUS_READY = 3;
+  ORDER_STATUS_SERVED = 4;
+  ORDER_STATUS_PAID = 5;
+  ORDER_STATUS_CANCELLED = 6;
+}

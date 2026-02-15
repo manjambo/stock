@@ -1,0 +1,85 @@
+syntax = "proto3";
+
+package stock.v1;
+
+option java_package = "com.gaywood.stock.grpc.v1";
+option java_multiple_files = true;
+option java_outer_classname = "StockServiceProto";
+
+import "stock/v1/common.proto";
+
+// Stock management service
+service StockService {
+  // Add stock for an item
+  rpc AddStock(AddStockRequest) returns (StockItemResponse);
+
+  // Remove stock from an item
+  rpc RemoveStock(RemoveStockRequest) returns (StockItemResponse);
+
+  // Get a stock item by ID
+  rpc GetStockItem(GetStockItemRequest) returns (StockItemResponse);
+
+  // List all stock items
+  rpc ListStockItems(ListStockItemsRequest) returns (ListStockItemsResponse);
+
+  // Get low stock items
+  rpc GetLowStockItems(GetLowStockItemsRequest) returns (ListStockItemsResponse);
+}
+
+// Request to add stock
+message AddStockRequest {
+  string stock_item_id = 1;
+  string staff_id = 2;
+  double quantity = 3;
+}
+
+// Request to remove stock
+message RemoveStockRequest {
+  string stock_item_id = 1;
+  string staff_id = 2;
+  double quantity = 3;
+}
+
+// Request to get stock item
+message GetStockItemRequest {
+  string stock_item_id = 1;
+}
+
+// Request to list stock items
+message ListStockItemsRequest {
+  PageRequest pagination = 1;
+  optional string category = 2;  // Filter by category
+}
+
+// Request to get low stock items
+message GetLowStockItemsRequest {
+  PageRequest pagination = 1;
+}
+
+// Stock item response wrapper
+message StockItemResponse {
+  StockItem stock_item = 1;
+}
+
+// List of stock items response
+message ListStockItemsResponse {
+  repeated StockItem stock_items = 1;
+  PageInfo page_info = 2;
+}
+
+// Stock item entity
+message StockItem {
+  string id = 1;
+  string name = 2;
+  Quantity quantity = 3;
+  Quantity reorder_threshold = 4;
+  string category = 5;
+  repeated string allergens = 6;
+  bool is_low_stock = 7;
+}
+
+// Quantity with unit
+message Quantity {
+  double amount = 1;
+  string unit = 2;  // BOTTLES, LITERS, KILOGRAMS, etc.
+}

@@ -1,0 +1,92 @@
+syntax = "proto3";
+
+package stock.v1;
+
+option java_package = "com.gaywood.stock.grpc.v1";
+option java_multiple_files = true;
+option java_outer_classname = "MenuServiceProto";
+
+import "stock/v1/common.proto";
+
+// Menu management service
+service MenuService {
+  // Get a menu by ID
+  rpc GetMenu(GetMenuRequest) returns (MenuResponse);
+
+  // List all menus
+  rpc ListMenus(ListMenusRequest) returns (ListMenusResponse);
+
+  // Get a menu item by ID
+  rpc GetMenuItem(GetMenuItemRequest) returns (MenuItemResponse);
+
+  // List menu items
+  rpc ListMenuItems(ListMenuItemsRequest) returns (ListMenuItemsResponse);
+}
+
+// Request to get a menu
+message GetMenuRequest {
+  string menu_id = 1;
+}
+
+// Menu response wrapper
+message MenuResponse {
+  Menu menu = 1;
+}
+
+// Request to list menus
+message ListMenusRequest {
+  PageRequest pagination = 1;
+}
+
+// List menus response
+message ListMenusResponse {
+  repeated Menu menus = 1;
+  PageInfo page_info = 2;
+}
+
+// Request to get a menu item
+message GetMenuItemRequest {
+  string menu_item_id = 1;
+}
+
+// Menu item response wrapper
+message MenuItemResponse {
+  MenuItem menu_item = 1;
+}
+
+// Request to list menu items
+message ListMenuItemsRequest {
+  PageRequest pagination = 1;
+  optional string menu_id = 2;  // Filter by menu
+}
+
+// List menu items response
+message ListMenuItemsResponse {
+  repeated MenuItem menu_items = 1;
+  PageInfo page_info = 2;
+}
+
+// Menu entity
+message Menu {
+  string id = 1;
+  string name = 2;
+  MenuType type = 3;
+  repeated MenuItem items = 4;
+}
+
+// Menu type enumeration
+enum MenuType {
+  MENU_TYPE_UNSPECIFIED = 0;
+  MENU_TYPE_FOOD = 1;
+  MENU_TYPE_DRINKS = 2;
+}
+
+// Menu item entity
+message MenuItem {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  Price price = 4;
+  repeated string allergens = 5;
+  bool available = 6;
+}

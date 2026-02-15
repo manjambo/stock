@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package stock.v1;
+
+option java_package = "com.gaywood.stock.grpc.v1";
+option java_multiple_files = true;
+option java_outer_classname = "HealthServiceProto";
+
+// Health check service for monitoring and Kubernetes probes
+service HealthService {
+  // Overall health check (alias for Ready)
+  rpc Check(HealthCheckRequest) returns (HealthCheckResponse);
+
+  // Kubernetes readiness probe
+  rpc Ready(HealthCheckRequest) returns (HealthCheckResponse);
+
+  // Kubernetes liveness probe
+  rpc Live(HealthCheckRequest) returns (LivenessResponse);
+
+  // Get feature flags status
+  rpc Features(FeaturesRequest) returns (FeaturesResponse);
+}
+
+// Empty request for health checks
+message HealthCheckRequest {}
+
+// Health check response with component statuses
+message HealthCheckResponse {
+  HealthStatus status = 1;
+  map<string, ComponentHealth> components = 2;
+}
+
+// Component health status
+message ComponentHealth {
+  HealthStatus status = 1;
+  optional string error = 2;
+}
+
+// Health status enumeration
+enum HealthStatus {
+  HEALTH_STATUS_UNSPECIFIED = 0;
+  HEALTH_STATUS_UP = 1;
+  HEALTH_STATUS_DOWN = 2;
+}
+
+// Liveness response (simple UP status)
+message LivenessResponse {
+  HealthStatus status = 1;
+}
+
+// Request for feature flags
+message FeaturesRequest {}
+
+// Feature flags response
+message FeaturesResponse {
+  map<string, bool> features = 1;
+}
